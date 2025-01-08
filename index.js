@@ -12,7 +12,6 @@ const KAFKA_PASSWORD = "eWKhGtJJ16Fo9svPInU8Osw99zEZ44wt";
 // Kafka configuration
 const kafka = new Kafka({
   brokers: [KAFKA_BOOTSTRAP_SERVER_URL],
-  ssl: true,
   sasl: {
     mechanism: "scram-sha-512",
     username: KAFKA_USERNAME,
