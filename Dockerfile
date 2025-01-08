@@ -1,15 +1,20 @@
-# Stage 1 to build Vite V5 App using node 20
-FROM node:20-alpine as build-stage
-WORKDIR /app
-COPY package*.json /app/
+# Use Node.js LTS version
+FROM node:18-slim
+ 
+# Create app directory
+WORKDIR /usr/src/app
+ 
+# Copy package files
+COPY package*.json ./
+ 
+# Install dependencies
 RUN npm install
-COPY ./ /app/
-RUN npm run build
-
-# Stage 2 to host built Vite App
-FROM nginx:alpine
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-COPY --from=build-stage /app/nginx/nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+ 
+# Bundle app source
+COPY . .
+ 
+# Expose port (adjust if your app uses a different port)
+EXPOSE 3000
+ 
+# Command to run the app
+CMD [ "npm", "run", "dev" ]
