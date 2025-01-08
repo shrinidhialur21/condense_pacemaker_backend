@@ -56,9 +56,45 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
+
+const KAFKA_BOOTSTRAP_SERVER_URL = "my-cluster-kafka-bootstrap.kafka:9092";
+const KAFKA_USERNAME = "my-connect-user";
+const KAFKA_PASSWORD = "eWKhGtJJ16Fo9svPInU8Osw99zEZ44wt";
+
+
 // Kafka configuration
-const kafkaClient = new Kafka.KafkaClient({ kafkaHost: "localhost:9092" });
-const producer = new Kafka.Producer(kafkaClient);
+const kafka = new Kafka({
+  brokers: [KAFKA_BOOTSTRAP_SERVER_URL],
+  ssl: true,
+  sasl: {
+    mechanism: "scram-sha-512",
+    username: KAFKA_USERNAME,
+    password: KAFKA_PASSWORD
+  }
+});
+
+// Create producer
+const producer = kafka.producer();
+
+// Connect producer
+const connectProducer = async () => {
+  try {
+    await producer.connect();
+    console.log('Producer connected successfully');
+  } catch (error) {
+    console.error('Error connecting producer:', error);
+  }
+};
+
+
+connectProducer();
+
+const gracefulShutdown = async () => {
+  await producer.disconnect();
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 const app = express();
 const server = http.createServer(app);
