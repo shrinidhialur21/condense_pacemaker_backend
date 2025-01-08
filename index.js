@@ -50,7 +50,7 @@
 //   console.error("Kafka Producer error:", err);
 // });
 
-const Kafka = require("kafka-node");
+const { Kafka } = require('kafkajs');
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
