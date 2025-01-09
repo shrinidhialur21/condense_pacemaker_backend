@@ -3,11 +3,13 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
- 
-const KAFKA_BOOTSTRAP_SERVER_URL = "my-cluster-kafka-bootstrap.kafka:9092";
-const KAFKA_USERNAME = "my-connect-user";
-const KAFKA_PASSWORD = "eWKhGtJJ16Fo9svPInU8Osw99zEZ44wt";
+const dotenv = require("dotenv");
+dotenv.config();
 
+const KAFKA_BOOTSTRAP_SERVER_URL = process.env.KAFKA_BOOTSTRAP_SERVER_URL || "my-cluster-kafka-bootstrap.kafka:9092";
+const KAFKA_USERNAME = process.env.KAFKA_USERNAME || "my-connect-user";
+const KAFKA_PASSWORD = process.env.KAFKA_PASSWORD || "eWKhGtJJ16Fo9svPInU8Osw99zEZ44wt";
+const SERVICE_PORT = process.env.SERVICE_PORT || 8081;
 
 // Kafka configuration
 const kafka = new Kafka({
@@ -15,8 +17,8 @@ const kafka = new Kafka({
   sasl: {
     mechanism: "scram-sha-512",
     username: KAFKA_USERNAME,
-    password: KAFKA_PASSWORD
-  }
+    password: KAFKA_PASSWORD,
+  },
 });
 
 // Create producer
@@ -26,12 +28,11 @@ const producer = kafka.producer();
 const connectProducer = async () => {
   try {
     await producer.connect();
-    console.log('Producer connected successfully');
+    console.log("Producer connected successfully");
   } catch (error) {
-    console.error('Error connecting producer:', error);
+    console.error("Error connecting producer:", error);
   }
 };
-
 
 connectProducer();
 
@@ -39,40 +40,40 @@ const gracefulShutdown = async () => {
   await producer.disconnect();
 };
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
- 
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: true, // Replace with your frontend's URL
+    origin: "*", // Allow all origins
     methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"], // Allow custom headers
+    allowedHeaders: ["Content-Type"],
   },
 });
- 
+
 const corsOptions = {
-  origin: "http://localhost:5173", // Replace with your frontend's URL
+  origin: "*", // Allow all origins
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"],
-  credentials: true, // if you need to send cookies across domains
+  credentials: true,
 };
- 
+
 app.use(cors(corsOptions));
- 
+
 let isPublishing = false;
 let publishInterval = null;
 let pacemakerData;
- 
+
 let loopCount = 0; // Initialize a counter
- 
+
 // Generate random pacemaker data
 const generateRandomData = () => {
   loopCount++; // Increment the counter on every call
- 
+
   const heartRate = Math.floor(Math.random() * (120 - 60 + 1)) + 60;
- 
+
   return {
     deviceId: `PACEMAKER-${Math.floor(Math.random() * 1000) + 1}`,
     timestamp: new Date().toISOString(),
@@ -91,22 +92,22 @@ const generateRandomData = () => {
     },
   };
 };
- 
+
 // Start publishing data
 const startPublishing = async () => {
   if (isPublishing) return;
   isPublishing = true;
   console.log("Kafka producer started");
- 
+
   publishInterval = setInterval(async () => {
     pacemakerData = generateRandomData();
- 
+
     const payload = {
-      topic: "pacemaker-data",
+      topic: process.env.PUBLISH_TOPIC,
       messages: [{ value: JSON.stringify(pacemakerData) }],
     };
     io.emit("pacemakerData", pacemakerData);
- 
+
     try {
       await producer.send(payload);
       console.log("Published:", pacemakerData);
@@ -115,7 +116,7 @@ const startPublishing = async () => {
     }
   }, 2000);
 };
- 
+
 // Stop publishing data
 const stopPublishing = () => {
   if (!isPublishing) return;
@@ -123,36 +124,36 @@ const stopPublishing = () => {
   clearInterval(publishInterval);
   console.log("Kafka producer stopped");
 };
- 
+
 // Handle Socket.IO connections
 io.on("connection", (socket) => {
   console.log("Client connected");
- 
+
   socket.on("start", () => {
     startPublishing();
   });
- 
+
   socket.on("stop", () => {
     stopPublishing();
   });
- 
+
   socket.on("disconnect", () => {
     console.log("Client disconnected");
     stopPublishing();
   });
 });
- 
+
 // Start the server
 const startServer = async () => {
   try {
     await producer.connect();
     console.log("Kafka Producer is connected and ready.");
-    server.listen(8081, () =>
-      console.log("Server is running on http://localhost:8081")
+    server.listen(SERVICE_PORT, () =>
+      console.log(`Server is running on http://localhost:${SERVICE_PORT}`)
     );
   } catch (err) {
     console.error("Failed to start Kafka Producer:", err);
   }
 };
- 
+
 startServer();
