@@ -1,20 +1,12 @@
-# Use Node.js LTS version
-FROM node:18-slim
- 
+FROM node:lts-alpine
+
 # Create app directory
-WORKDIR /usr/src/app
- 
-# Copy package files
-COPY package*.json ./
- 
-# Install dependencies
+WORKDIR /app
+
+COPY . /app
+
 RUN npm install
- 
-# Bundle app source
-COPY . .
- 
-# Expose port (adjust if your app uses a different port)
-EXPOSE 8081
- 
-# Command to run the app
-CMD [ "node", "index.js"]
+
+EXPOSE 9001
+#CMD [ "node", "index.js" ]
+CMD ["node", "index.js"]
