@@ -147,8 +147,8 @@ const startServer = async () => {
   try {
     await producer.connect();
     console.log("Kafka Producer is connected and ready.");
-    server.listen(8080, () =>
-      console.log("Server is running on http://localhost:8080")
+    server.listen(8081, () =>
+      console.log("Server is running on http://localhost:8081")
     );
   } catch (err) {
     console.error("Failed to start Kafka Producer:", err);
