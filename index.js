@@ -66,6 +66,15 @@ app.post("/start", async (req, res) => {
   }
 });
 
+app.get("/getData",async (req, res)=>{
+  let data = await generateRandomData();
+  return res.status(200).send({
+    code:200,
+    status:"OK",
+    data:data
+  })
+});
+
 const generateRandomData = () => {
   loopCount++; // Increment the counter on every call
 
